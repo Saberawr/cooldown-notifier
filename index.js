@@ -178,7 +178,7 @@ class cooldown {
 		// helper
 		function say(msg) {
 			var formattedMessage = '<FONT>' + msg + '</FONT>';
-			if (((channel == 1) || (channel == 32) && (members.length > 0))) {
+			if (members.length > 0) {
 				mod.send('C_CHAT', 1, {
 					channel:	channel,
 					message:	formattedMessage
