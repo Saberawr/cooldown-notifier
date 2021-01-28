@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 
 class cooldown {
 	
@@ -7,12 +7,13 @@ class cooldown {
 		this.mod = mod;
 		this.command = mod.command;
 		this.hook = null;
-		var enabled, channel, job, includeAllies, members;
+		var enabled, channel, job, includeAllies, members, selfTimers;
 		enabled = false;
-		channel = 1;	// party=1, guild=2, raid=32
+		channel = 2;	// party=1, guild=2, raid=32
 		job = 0;
-		includeAllies = false;
+		includeAllies = false;	// todo - track allies' cdr & cds
 		members = [];
+		selfTimers = [];
 		
 		// command
 		mod.command.add('cooldown', {
@@ -89,7 +90,7 @@ class cooldown {
 			},
 			4: { // Sorcerer
 				340200: { // Mana Boost
-					name: "burst",
+					name: "boost",
 					reminderTimes: [5],
 					enabledSelf: true,
 					enabledAllies: false
@@ -147,7 +148,7 @@ class cooldown {
 					name: "enrage",
 					reminderTimes: [20, 5],
 					enabledSelf: false,
-					enabledAllies: false
+					enabledAllies: true
 				},
 				260100: { // Rhythmic Blows
 					name: "rb",
@@ -178,7 +179,7 @@ class cooldown {
 		// helper
 		function say(msg) {
 			var formattedMessage = '<FONT>' + msg + '</FONT>';
-			if (members.length > 0) {
+			if (enabled && (members.length > 0 || channel == 0)) {
 				mod.send('C_CHAT', 1, {
 					channel:	channel,
 					message:	formattedMessage
@@ -192,10 +193,18 @@ class cooldown {
 			if (enabled) {
 				if (skills[job][e.skill.id] && skills[job][e.skill.id].enabledSelf) {
 					skills[job][e.skill.id].reminderTimes.forEach(function(value, index, array) {
-						mod.setTimeout(say, (e.cooldown - (value * 1000)), (skills[job][e.skill.id].name + ' in ' + value));
+						selfTimers.push(mod.setTimeout(say, (e.cooldown - (value * 1000)), (skills[job][e.skill.id].name + ' in ' + value)));
 					});
 				}
 			}
+		});
+		
+		this.hook = mod.hook('S_LOAD_TOPO', 3, (e) => {
+			var j, len;
+			for (j = 0, len = selfTimers.length; j < len; j++) {
+				mod.clearTimeout(selfTimers[j]);
+			}
+			selfTimers = [];
 		});
 		
 		// others' skills
